@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.yeutterg.tray-menu",
+  "name": "Tray: Click for Menu",
+  "version": "0.1.0",
+  "author": "yeutterg",
+  "license": "MIT",
+  "description": "Omarchy's system tray, except a click or tap shows an app's menu instead of opening the app. Made for touchscreens, which have no right click.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Tray.qml"
+  },
+  "barWidget": {
+    "displayName": "System tray",
+    "description": "Status notifier items; click shows the menu",
+    "category": "Status",
+    "allowMultiple": false
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.tray"
+  }
+}
