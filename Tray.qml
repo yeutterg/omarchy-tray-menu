@@ -12,6 +12,29 @@ BarWidget {
   moduleName: "omarchy.tray"
 
   property bool expanded: false
+  // omarchy-tray-touch: on a touchscreen a finger only "hovers" while it
+  // touches, so the hover-to-open drawer opened for an instant, slid an icon
+  // under the finger and the same tap opened that app. A tap on the chevron now
+  // keeps the drawer open (stuckOpen); icon taps right after it opens are
+  // ignored; it closes after an icon is used or when left idle.
+  property bool hovering: false
+  property bool stuckOpen: false
+  property double openedAt: 0
+  readonly property bool open: hovering || stuckOpen
+  onOpenChanged: {
+    expanded = open
+    if (open) openedAt = Date.now()
+  }
+  function toggleStuckOpen() {
+    stuckOpen = !stuckOpen
+    if (stuckOpen) idleClose.restart()
+  }
+  function justOpened() { return Date.now() - openedAt < 500 }
+  Timer {
+    id: idleClose
+    interval: 6000
+    onTriggered: if (root.hovering) restart(); else root.stuckOpen = false
+  }
   property bool managePopupOpen: false
   property bool trayMenuOpen: false
   property var activeTrayItem: null
@@ -260,7 +283,7 @@ BarWidget {
         visible: root.allItems.length > 0
 
         HoverHandler {
-          onHoveredChanged: root.expanded = hovered
+          onHoveredChanged: root.hovering = hovered
         }
 
         BarIconButton {
@@ -272,6 +295,7 @@ BarWidget {
           text: "\uf053"
           onPressed: function(button) {
             if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
+            else if (button === Qt.LeftButton) root.toggleStuckOpen()
           }
         }
 
@@ -342,7 +366,7 @@ BarWidget {
         visible: root.allItems.length > 0
 
         HoverHandler {
-          onHoveredChanged: root.expanded = hovered
+          onHoveredChanged: root.hovering = hovered
         }
 
         BarIconButton {
@@ -355,6 +379,7 @@ BarWidget {
           textRotation: 90
           onPressed: function(button) {
             if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
+            else if (button === Qt.LeftButton) root.toggleStuckOpen()
           }
         }
 
@@ -830,14 +855,13 @@ BarWidget {
         }
       }
       onClicked: function(mouse) {
+        if (mouse.button !== Qt.RightButton && root.justOpened()) return
+        if (mouse.button !== Qt.RightButton) root.stuckOpen = false
         if (mouse.button === Qt.RightButton) {
           mouse.accepted = true
         } else if (mouse.button === Qt.MiddleButton) {
           trayItemRoot.modelData.secondaryActivate()
-        } else if (trayItemRoot.modelData.onlyMenu || trayItemRoot.modelData.hasMenu) {
-          // omarchy-tray-menu: a click (or tap) shows the app's menu when it
-          // has one, instead of opening the app; there's no right click on a
-          // touchscreen. Apps without a menu still open on click.
+        } else if (trayItemRoot.modelData.onlyMenu) {
           trayItemRoot.displayMenu(mouse)
         } else {
           trayItemRoot.modelData.activate()
